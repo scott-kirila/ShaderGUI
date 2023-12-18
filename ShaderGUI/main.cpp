@@ -1,3 +1,5 @@
+#include "callbacks.h"
+
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glfw.h"
 #include "ImGui/imgui_impl_opengl3.h"
@@ -11,32 +13,6 @@
 const int viewWidth = 1920;
 const int viewHeight = 1080;
 std::string glsl_version = "#version 330";
-
-const char* vertexShaderSource =
-	"#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n"
-	"void main()\n"
-	"{\n"
-	"   gl_Position = vec4(aPos, 1.0);\n"
-	"}\0";
-
-static int text_resize_callback(ImGuiInputTextCallbackData* data)
-{
-	if (data->EventFlag == ImGuiInputTextFlags_CallbackResize)
-	{
-		auto user_data = (std::string*)data->UserData;
-		IM_ASSERT(user_data->c_str() == data->Buf);
-		user_data->resize(data->BufTextLen);
-		data->Buf = (char*)user_data->c_str();
-	}
-
-	return 0;
-}
-
-static void glfw_error_callback(int error, const char* description)
-{
-	fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-}
 
 namespace ImGui {
 	bool InputTextMultiline(const char* label, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags)
