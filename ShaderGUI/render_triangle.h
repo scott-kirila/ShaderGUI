@@ -1,18 +1,22 @@
 #pragma once
+#include "glad/glad.h"
 
-const char* vertexShaderSource =
-"#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos, 1.0);\n"
-"}\0";
+#include <iostream>
 
-const char* fragmentShaderSource =
-"#version 330 core\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"}\n\0";
+extern const char* vertexShaderSource;
+extern const char* fragmentShaderSource;
 
+extern GLuint VAO, VBO, FBO, RBO, texture_id, shaderProgram;
+
+void create_framebuffer(int width, int height);
+
+void bind_framebuffer();
+
+void unbind_framebuffer();
+
+// Can this be done with a callback?
+void rescale_framebuffer(float width, float height);
+
+void create_shader();
+
+void create_triangle();

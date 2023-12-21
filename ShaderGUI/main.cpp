@@ -1,4 +1,5 @@
 #include "callbacks.h"
+#include "render_triangle.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glfw.h"
@@ -9,6 +10,24 @@
 
 #include <iostream>
 #include <string>
+
+GLuint VAO, VBO, FBO, RBO, texture_id, shaderProgram;
+
+const char* vertexShaderSource =
+R"(#version 330 core
+	layout (location = 0) in vec3 aPos;
+	void main()
+	{
+	   gl_Position = vec4(aPos, 1.0);
+	})";
+
+const char* fragmentShaderSource =
+R"(#version 330 core
+	out vec4 FragColor;
+	void main()
+	{
+		FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+	})";
 
 const int viewWidth = 1920;
 const int viewHeight = 1080;
@@ -78,6 +97,8 @@ int main() {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     bool show_demo_window = true;
 
+    create_shader();
+
     // Main Loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -133,6 +154,23 @@ int main() {
         // Render window
         {
             ImGui::Begin("Render Window");
+
+            const float window_width = ImGui::GetContentRegionAvail().x;
+            const float window_height = ImGui::GetContentRegionAvail().y;
+
+            rescale_framebuffer(window_width, window_height);
+            glViewport(0, 0, window_width, window_height);
+
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+
+            ImGui::GetWindowDrawList()->AddImage(
+                (void*)texture_id,
+                ImVec2(pos.x, pos.y),
+                ImVec2(pos.x + window_width, pos.y + window_height),
+                ImVec2(0, 1),
+                ImVec2(1, 0)
+            );
+
             ImGui::End();
         }
 
@@ -145,6 +183,14 @@ int main() {
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        bind_framebuffer();
+        glUseProgram(shaderProgram);
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+        glUseProgram(0);
+
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Update and Render additional Platform Windows
