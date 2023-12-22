@@ -1,5 +1,5 @@
 #include "callbacks.h"
-#include "render_triangle.h"
+//#include "render_triangle.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glfw.h"
@@ -95,9 +95,7 @@ int main() {
 	ImGui_ImplOpenGL3_Init(glsl_version.c_str());
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    bool show_demo_window = true;
-
-    create_shader();
+    bool show_demo_window = false;
 
     // Main Loop
     while (!glfwWindowShouldClose(window)) {
@@ -155,25 +153,63 @@ int main() {
         {
             ImGui::Begin("Render Window");
 
-            const float window_width = ImGui::GetContentRegionAvail().x;
-            const float window_height = ImGui::GetContentRegionAvail().y;
+            ImTextureID my_tex_id = io.Fonts->TexID;
+            float my_tex_w = (float)io.Fonts->TexWidth;
+            float my_tex_h = (float)io.Fonts->TexHeight;
+            {
+                static bool use_text_color_for_tint = false;
+                ImGui::Checkbox("Use Text Color for Tint", &use_text_color_for_tint);
+                ImGui::Text("%.0fx%.0f", my_tex_w, my_tex_h);
+                ImVec2 pos = ImGui::GetCursorScreenPos();
+                ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+                ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+                ImVec4 tint_col = use_text_color_for_tint ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f);   // No tint
+                ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+                ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
+                if (ImGui::BeginItemTooltip())
+                {
+                    float region_sz = 32.0f;
+                    float region_x = io.MousePos.x - pos.x - region_sz * 0.5f;
+                    float region_y = io.MousePos.y - pos.y - region_sz * 0.5f;
+                    float zoom = 4.0f;
+                    if (region_x < 0.0f) { region_x = 0.0f; }
+                    else if (region_x > my_tex_w - region_sz) { region_x = my_tex_w - region_sz; }
+                    if (region_y < 0.0f) { region_y = 0.0f; }
+                    else if (region_y > my_tex_h - region_sz) { region_y = my_tex_h - region_sz; }
+                    ImGui::Text("Min: (%.2f, %.2f)", region_x, region_y);
+                    ImGui::Text("Max: (%.2f, %.2f)", region_x + region_sz, region_y + region_sz);
+                    ImVec2 uv0 = ImVec2((region_x) / my_tex_w, (region_y) / my_tex_h);
+                    ImVec2 uv1 = ImVec2((region_x + region_sz) / my_tex_w, (region_y + region_sz) / my_tex_h);
+                    ImGui::Image(my_tex_id, ImVec2(region_sz * zoom, region_sz * zoom), uv0, uv1, tint_col, border_col);
+                    ImGui::EndTooltip();
+                }
+            }
 
-            rescale_framebuffer(window_width, window_height);
-            glViewport(0, 0, window_width, window_height);
-
-            ImVec2 pos = ImGui::GetCursorScreenPos();
-
-            ImGui::GetWindowDrawList()->AddImage(
-                (void*)texture_id,
-                ImVec2(pos.x, pos.y),
-                ImVec2(pos.x + window_width, pos.y + window_height),
-                ImVec2(0, 1),
-                ImVec2(1, 0)
-            );
+            ImGui::TextWrapped("And now some textured buttons..");
+            static int pressed_count = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                // UV coordinates are often (0.0f, 0.0f) and (1.0f, 1.0f) to display an entire textures.
+                // Here are trying to display only a 32x32 pixels area of the texture, hence the UV computation.
+                // Read about UV coordinates here: https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+                ImGui::PushID(i);
+                if (i > 0)
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(i - 1.0f, i - 1.0f));
+                ImVec2 size = ImVec2(32.0f, 32.0f);                         // Size of the image we want to make visible
+                ImVec2 uv0 = ImVec2(0.0f, 0.0f);                            // UV coordinates for lower-left
+                ImVec2 uv1 = ImVec2(32.0f / my_tex_w, 32.0f / my_tex_h);    // UV coordinates for (32,32) in our texture
+                ImVec4 bg_col = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);             // Black background
+                ImVec4 tint_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);           // No tint
+                if (ImGui::ImageButton("", my_tex_id, size, uv0, uv1, bg_col, tint_col))
+                    pressed_count += 1;
+                if (i > 0)
+                    ImGui::PopStyleVar();
+                ImGui::PopID();
+                ImGui::SameLine();
+            }
 
             ImGui::End();
         }
-
         ImGui::End();
 
         // Rendering
@@ -183,13 +219,6 @@ int main() {
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        bind_framebuffer();
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
-        glUseProgram(0);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
