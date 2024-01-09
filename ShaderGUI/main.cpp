@@ -179,7 +179,7 @@ int main() {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
 	ImGui::StyleColorsDark();
 
@@ -252,12 +252,25 @@ int main() {
 
         {
             ImGui::Begin("Render Window");
+            static float aspectRatio = 1920.0f / 1080.0f;
+            auto viewportSize = ImGui::GetContentRegionAvail();
+            float contentRegionAspectRatio = viewportSize.x / viewportSize.y;
+
+            float imageWidth = contentRegionAspectRatio > aspectRatio ? viewportSize.y * aspectRatio : viewportSize.x;
+            float imageHeight = contentRegionAspectRatio > aspectRatio ? viewportSize.y : viewportSize.x / aspectRatio;
+
             ImVec2 windowSize = ImGui::GetWindowSize();
+            windowSize.x /= 2;
+            windowSize.y /= 2;
 
             glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowSize.x, windowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowSize.x * 3, windowSize.y * 3, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            int w, h;
+            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
 
             // Render window
@@ -273,7 +286,7 @@ int main() {
 
 
             //glViewport(0, 0, windowSize.x, windowSize.y);
-            ImGui::Image((ImTextureID)textureColorBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image((void*)textureColorBuffer, ImVec2(viewportSize.x, viewportSize.y), ImVec2(0, 1), ImVec2(1, 0));
             ImGui::End();
         }
         ImGui::End();
