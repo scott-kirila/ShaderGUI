@@ -31,6 +31,9 @@ R"(#version 330 core
 
 const int viewWidth = 1920;
 const int viewHeight = 1080;
+
+ImVec2 framebufferSize = ImVec2(viewWidth, viewHeight);
+
 std::string glsl_version = "#version 330";
 
 namespace ImGui {
@@ -42,6 +45,10 @@ namespace ImGui {
 		return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags | ImGuiInputTextFlags_CallbackResize, text_resize_callback, (void*)str);
 	}
 }
+
+//void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+//    glViewport(0, 0, width, height);
+//}
 
 int main() {
 
@@ -64,17 +71,13 @@ int main() {
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
+    //glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
 		std::cerr << "Failed to initialize GLAD" << std::endl;
 
 		return EXIT_FAILURE;
 	}
-
-
-
-
-
 
     // START SETUP
     float vertices[] = {
@@ -120,7 +123,7 @@ int main() {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
     }
-    glDeleteShader(vertexShader);
+    //glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     // END SHADERS
 
@@ -128,22 +131,13 @@ int main() {
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     glBindVertexArray(VAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
     glBindVertexArray(0);
-    // END VERTEX BUFFERS
 
     // Framebuffer
     unsigned int framebuffer;
@@ -154,16 +148,16 @@ int main() {
     unsigned int textureColorBuffer;
     glGenTextures(1, &textureColorBuffer);
     glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, viewWidth, viewHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebufferSize.x, framebufferSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
 
-    //unsigned int rbo;
-    //glGenRenderbuffers(1, &rbo);
-    //glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, viewWidth, viewHeight);
-    //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebufferSize.x, framebufferSize.y);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "ERROR: Framebuffer is incomplete!" << std::endl;
@@ -179,7 +173,7 @@ int main() {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
 	ImGui::StyleColorsDark();
 
@@ -196,7 +190,7 @@ int main() {
 	ImGui_ImplOpenGL3_Init(glsl_version.c_str());
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    bool show_demo_window = false;
+    bool show_demo_window = true;
 
     // Main Loop
     while (!glfwWindowShouldClose(window)) {
@@ -252,30 +246,37 @@ int main() {
 
         {
             ImGui::Begin("Render Window");
-            static float aspectRatio = 1920.0f / 1080.0f;
             auto viewportSize = ImGui::GetContentRegionAvail();
-            float contentRegionAspectRatio = viewportSize.x / viewportSize.y;
 
-            float imageWidth = contentRegionAspectRatio > aspectRatio ? viewportSize.y * aspectRatio : viewportSize.x;
-            float imageHeight = contentRegionAspectRatio > aspectRatio ? viewportSize.y : viewportSize.x / aspectRatio;
+            if (framebufferSize.x != viewportSize.x || framebufferSize.y != viewportSize.y) {
+                framebufferSize = viewportSize;
 
-            ImVec2 windowSize = ImGui::GetWindowSize();
-            windowSize.x /= 2;
-            windowSize.y /= 2;
+                glDeleteFramebuffers(1, &framebuffer);
+                glDeleteRenderbuffers(1, &rbo);
 
-            glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
-            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowSize.x * 3, windowSize.y * 3, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            int w, h;
-            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+                glGenFramebuffers(1, &framebuffer);
+                glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
+                glViewport(0, 0, viewportSize.x, viewportSize.y);
 
-            // Render window
-            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-            glClearColor(0.2f, 0.1f, 0.3f, 1.0f);
+                glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebufferSize.x, framebufferSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
+
+                glGenRenderbuffers(1, &rbo);
+                glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebufferSize.x, framebufferSize.y);
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+            }
+            else {
+                glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+                glViewport(0, 0, viewportSize.x, viewportSize.y);
+            }
+
+            // Draw
+            glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
 
@@ -284,9 +285,7 @@ int main() {
             glDrawArrays(GL_TRIANGLES, 0, 3);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-
-            //glViewport(0, 0, windowSize.x, windowSize.y);
-            ImGui::Image((void*)textureColorBuffer, ImVec2(viewportSize.x, viewportSize.y), ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image((void*)textureColorBuffer, ImVec2(framebufferSize.x, framebufferSize.y), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::End();
         }
         ImGui::End();
@@ -302,8 +301,6 @@ int main() {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Update and Render additional Platform Windows
-        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
-        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backup_current_context = glfwGetCurrentContext();
