@@ -123,7 +123,7 @@ int main() {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
     }
-    //glDeleteShader(vertexShader);
+    glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     // END SHADERS
 
@@ -190,7 +190,7 @@ int main() {
 	ImGui_ImplOpenGL3_Init(glsl_version.c_str());
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    bool show_demo_window = true;
+    bool show_demo_window = false;
 
     // Main Loop
     while (!glfwWindowShouldClose(window)) {
@@ -227,6 +227,8 @@ int main() {
         ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
+
+
         // Fragment shader window
         {
 
@@ -239,6 +241,71 @@ int main() {
 
             if (ImGui::Button("Recompile")) {
                 std::cout << "Recompiling..." << std::endl;
+
+                vertexShader = glCreateShader(GL_VERTEX_SHADER);
+                glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+                glCompileShader(vertexShader);
+                // check for shader compile errors
+
+                glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+                if (!success)
+                {
+                    glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+                    std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+                }
+
+                try {
+                    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+                    const char* newFragmentShader = fragmentShaderString.c_str();
+                    glShaderSource(fragmentShader, 1, &newFragmentShader, NULL);
+                    glCompileShader(fragmentShader);
+                    // check for shader compile errors
+                    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+                    if (!success)
+                    {
+                        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+                        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+                    }
+                    // link shaders
+                    shaderProgram = glCreateProgram();
+                    glAttachShader(shaderProgram, vertexShader);
+                    glAttachShader(shaderProgram, fragmentShader);
+                    glLinkProgram(shaderProgram);
+                    // check for linking errors
+                    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+                    if (!success) {
+                        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+                        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+                    }
+                    glDeleteShader(vertexShader);
+                    glDeleteShader(fragmentShader);
+                }
+                catch (const std::exception& e) {
+                    //useTempShaderProgram = false;
+                    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+                    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+                    glCompileShader(fragmentShader);
+                    // check for shader compile errors
+                    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+                    if (!success)
+                    {
+                        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+                        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+                    }
+                    // link shaders
+                    shaderProgram = glCreateProgram();
+                    glAttachShader(shaderProgram, vertexShader);
+                    glAttachShader(shaderProgram, fragmentShader);
+                    glLinkProgram(shaderProgram);
+                    // check for linking errors
+                    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+                    if (!success) {
+                        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+                        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+                    }
+                    glDeleteShader(vertexShader);
+                    glDeleteShader(fragmentShader);
+                }
             }
 
             ImGui::End();
