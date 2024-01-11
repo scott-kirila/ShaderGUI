@@ -91,4 +91,7 @@
   <ItemGroup>
     <Natvis Include="vendor\ImGui\imgui.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="JetBrainsMonoNerdFont-Regular.ttf" />
+  </ItemGroup>
 </Project>

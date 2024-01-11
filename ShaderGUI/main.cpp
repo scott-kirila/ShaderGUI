@@ -8,6 +8,7 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
+
 #include <iostream>
 #include <string>
 
@@ -16,17 +17,25 @@ GLuint VAO, VBO, FBO, RBO, texture_id, shaderProgram;
 const char* vertexShaderSource =
 R"(#version 330 core
 	layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec2 aTexCoords;
+    out vec2 TexCoords;
 	void main()
 	{
-	   gl_Position = vec4(aPos, 1.0);
+	   gl_Position = vec4(aPos, 1);
+       TexCoords = aTexCoords;
 	})";
 
 const char* fragmentShaderSource =
 R"(#version 330 core
+    in vec2 TexCoords;
 	out vec4 FragColor;
+
+    uniform vec2 ViewportSize;
+    uniform float Time;
+
 	void main()
 	{
-		FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+		FragColor = vec4(vec3(0), 1);
 	})";
 
 const int viewWidth = 1920;
@@ -59,6 +68,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
 	GLFWwindow* window = glfwCreateWindow(viewWidth, viewHeight, "Shader Editor", nullptr, nullptr);
 
@@ -185,6 +195,10 @@ int main() {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+    //ImFontConfig fontConfig;
+    //fontConfig.SizePixels = 32.0f;
+    //io.Fonts->AddFontDefault(&fontConfig);
+    io.Fonts->AddFontFromFileTTF("JetBrainsMonoNerdFont-Regular.ttf", 32.0f);
 
 	ImGui::StyleColorsDark();
 
@@ -194,6 +208,19 @@ int main() {
 	{
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+        style.Colors[ImGuiCol_FrameBg] = ImVec4{ 0.1, 0.1, 0.1, 1.0 };
+        style.Colors[ImGuiCol_Button] = ImVec4{ 0.2, 0.2, 0.2, 1.0 };
+        style.Colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.15, 0.0, 0.25, 1.0 };
+        style.Colors[ImGuiCol_TabActive] = ImVec4{ 0.15, 0.15, 0.15, 1.0 };
+        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.1, 0.1, 0.1, 1.0 };
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.0, 0.0, 0.0, 1.0 };
+        style.FrameRounding = 5.0f;
+        style.TabRounding = 5.0f;
+        //ImGuiCol_Tab,
+        //ImGuiCol_TabHovered,
+        //ImGuiCol_TabActive,
+        //ImGuiCol_TabUnfocused,
+        //ImGuiCol_TabUnfocusedActive,
 	}
 
 	// Set up backends
@@ -243,7 +270,7 @@ int main() {
         // Fragment shader window
         {
 
-            static std::string fragmentShaderString = glsl_version + "\n\nout vec4 FragColor;\n\nvoid main()\n{\n\tFragColor = vec4(1.0);\n}";
+            static std::string fragmentShaderString = glsl_version + "\n\nin vec2 TexCoords;\nout vec4 FragColor;\n\nuniform vec2 ViewportSize;\n\nuniform float Time;\n\nvoid main()\n{\n\tFragColor = vec4(vec3(0), 1);\n}";
 
             ImGui::Begin("Fragment Shader");
 
@@ -359,6 +386,11 @@ int main() {
             glEnable(GL_DEPTH_TEST);
 
             glUseProgram(shaderProgram);
+            int u_ViewportSize = glGetUniformLocation(shaderProgram, "ViewportSize");
+            glUniform2f(u_ViewportSize, viewportSize.x, viewportSize.y);
+            int u_Time = glGetUniformLocation(shaderProgram, "Time");
+            glUniform1f(u_Time, glfwGetTime());
+
             glBindVertexArray(VAO);
             glDrawArrays(GL_TRIANGLES, 0, 6);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
