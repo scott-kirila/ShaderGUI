@@ -1,5 +1,4 @@
 #include "callbacks.h"
-//#include "render_triangle.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glfw.h"
@@ -7,7 +6,6 @@
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
-
 
 #include <iostream>
 #include <string>
@@ -55,9 +53,6 @@ namespace ImGui {
 	}
 }
 
-//void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-//    glViewport(0, 0, width, height);
-//}
 
 int main() {
 
@@ -81,7 +76,6 @@ int main() {
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
-    //glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
 		std::cerr << "Failed to initialize GLAD" << std::endl;
@@ -90,13 +84,8 @@ int main() {
 	}
 
     // START SETUP
-    //float vertices[] = {
-    //    -0.5f, -0.5f, 0.0f,
-    //     0.5f, -0.5f, 0.0f,
-    //     0.0f,  0.5f, 0.0f
-    //};
-    float vertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-        // positions   // texCoords
+    float vertices[] = {
+        // positions         // texCoords
         -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
         -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
          1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
@@ -195,9 +184,6 @@ int main() {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
-    //ImFontConfig fontConfig;
-    //fontConfig.SizePixels = 32.0f;
-    //io.Fonts->AddFontDefault(&fontConfig);
     io.Fonts->AddFontFromFileTTF("JetBrainsMonoNerdFont-Regular.ttf", 32.0f);
 
 	ImGui::StyleColorsDark();
@@ -211,16 +197,14 @@ int main() {
         style.Colors[ImGuiCol_FrameBg] = ImVec4{ 0.1, 0.1, 0.1, 1.0 };
         style.Colors[ImGuiCol_Button] = ImVec4{ 0.2, 0.2, 0.2, 1.0 };
         style.Colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.15, 0.0, 0.25, 1.0 };
+        style.Colors[ImGuiCol_ButtonActive] = ImVec4{ 0.10, 0.0, 0.2, 1.0 };
         style.Colors[ImGuiCol_TabActive] = ImVec4{ 0.15, 0.15, 0.15, 1.0 };
+        style.Colors[ImGuiCol_TabHovered] = ImVec4{ 0.2, 0.2, 0.2, 1.0 };
         style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.1, 0.1, 0.1, 1.0 };
         style.Colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.0, 0.0, 0.0, 1.0 };
+
         style.FrameRounding = 5.0f;
         style.TabRounding = 5.0f;
-        //ImGuiCol_Tab,
-        //ImGuiCol_TabHovered,
-        //ImGuiCol_TabActive,
-        //ImGuiCol_TabUnfocused,
-        //ImGuiCol_TabUnfocusedActive,
 	}
 
 	// Set up backends
@@ -243,9 +227,6 @@ int main() {
 
         // Dockspace
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
-        // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
-        // because it would be confusing to have two docking targets within each others.
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -265,11 +246,7 @@ int main() {
         ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
-
-
-        // Fragment shader window
         {
-
             static std::string fragmentShaderString = glsl_version + "\n\nin vec2 TexCoords;\nout vec4 FragColor;\n\nuniform vec2 ViewportSize;\n\nuniform float Time;\n\nvoid main()\n{\n\tFragColor = vec4(vec3(0), 1);\n}";
 
             ImGui::Begin("Fragment Shader");
@@ -283,7 +260,6 @@ int main() {
                 vertexShader = glCreateShader(GL_VERTEX_SHADER);
                 glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
                 glCompileShader(vertexShader);
-                // check for shader compile errors
 
                 glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
                 if (!success)
@@ -297,20 +273,20 @@ int main() {
                     const char* newFragmentShader = fragmentShaderString.c_str();
                     glShaderSource(fragmentShader, 1, &newFragmentShader, NULL);
                     glCompileShader(fragmentShader);
-                    // check for shader compile errors
                     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+
                     if (!success)
                     {
                         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
                         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
                     }
-                    // link shaders
+
                     shaderProgram = glCreateProgram();
                     glAttachShader(shaderProgram, vertexShader);
                     glAttachShader(shaderProgram, fragmentShader);
                     glLinkProgram(shaderProgram);
-                    // check for linking errors
                     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+
                     if (!success) {
                         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
                         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
@@ -319,24 +295,23 @@ int main() {
                     glDeleteShader(fragmentShader);
                 }
                 catch (const std::exception& e) {
-                    //useTempShaderProgram = false;
                     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
                     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
                     glCompileShader(fragmentShader);
-                    // check for shader compile errors
                     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+
                     if (!success)
                     {
                         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
                         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
                     }
-                    // link shaders
+
                     shaderProgram = glCreateProgram();
                     glAttachShader(shaderProgram, vertexShader);
                     glAttachShader(shaderProgram, fragmentShader);
                     glLinkProgram(shaderProgram);
-                    // check for linking errors
                     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+
                     if (!success) {
                         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
                         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
