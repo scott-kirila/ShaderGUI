@@ -1,5 +1,5 @@
 #pragma once
-#include "ImGui/imgui.h"
+#include "imgui.h"
 
 int text_resize_callback(ImGuiInputTextCallbackData* data);
 

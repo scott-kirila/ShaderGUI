@@ -1,0 +1,14 @@
+{
+    "builtin-baseline": "53bef8994c541b6561884a8395ea35715ece75db",
+    "dependencies": [
+        {
+            "name": "glad",
+            "features": [ "gl-api-46" ]
+        },
+        "glfw3",
+        {
+            "name": "imgui",
+            "features": [ "docking-experimental", "glfw-binding", "opengl3-binding" ]
+        }
+    ]
+}
