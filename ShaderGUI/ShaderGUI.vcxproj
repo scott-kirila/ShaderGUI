@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -104,13 +107,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Dev\Libraries\glad\include;C:\Dev\Libraries\glfw\include;C:\Users\hetan\source\repos\OpenGL\ShaderGUI\ShaderGUI\vendor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Dev\Libraries\glfw\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -121,50 +124,29 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Dev\Libraries\glad\include;C:\Dev\Libraries\glfw\include;C:\Users\hetan\source\repos\OpenGL\ShaderGUI\ShaderGUI\vendor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Dev\Libraries\glfw\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="callbacks.cpp" />
-    <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="vendor\ImGui\imgui.cpp" />
-    <ClCompile Include="vendor\ImGui\imgui_demo.cpp" />
-    <ClCompile Include="vendor\ImGui\imgui_draw.cpp" />
-    <ClCompile Include="vendor\ImGui\imgui_impl_glfw.cpp" />
-    <ClCompile Include="vendor\ImGui\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="vendor\ImGui\imgui_tables.cpp" />
-    <ClCompile Include="vendor\ImGui\imgui_widgets.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="glfw3.dll" />
-    <None Include="vendor\ImGui\imgui.natstepfilter" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="callbacks.h" />
-    <ClInclude Include="vendor\ImGui\imconfig.h" />
-    <ClInclude Include="vendor\ImGui\imgui.h" />
-    <ClInclude Include="vendor\ImGui\imgui_impl_glfw.h" />
-    <ClInclude Include="vendor\ImGui\imgui_impl_opengl3.h" />
-    <ClInclude Include="vendor\ImGui\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="vendor\ImGui\imgui_internal.h" />
-    <ClInclude Include="vendor\ImGui\imstb_rectpack.h" />
-    <ClInclude Include="vendor\ImGui\imstb_textedit.h" />
-    <ClInclude Include="vendor\ImGui\imstb_truetype.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Natvis Include="vendor\ImGui\imgui.natvis" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="JetBrainsMonoNerdFont-Regular.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="imgui.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
