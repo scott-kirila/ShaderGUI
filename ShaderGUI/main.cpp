@@ -42,14 +42,28 @@ const int viewHeight = 1080;
 ImVec2 framebufferSize = ImVec2(viewWidth, viewHeight);
 
 std::string glsl_version = "#version 330";
+std::string fragmentShaderString = glsl_version +
+R"(
+
+in vec2 TexCoords;
+out vec4 FragColor;
+
+uniform vec2 ViewportSize;
+uniform float Time;
+
+void main()
+{
+    FragColor = vec4(vec3(0), 1);
+})";
 
 namespace ImGui {
 	bool InputTextMultiline(const char* label, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
-		flags |= ImGuiInputTextFlags_CallbackResize;
+        flags |= ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_CallbackCompletion;
 
-		return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags | ImGuiInputTextFlags_CallbackResize, text_resize_callback, (void*)str);
+		return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags, text_edit_callback, (void*)str);
+        
 	}
 }
 
@@ -98,7 +112,7 @@ int main() {
     // START SHADERS
     // ------------------------------------
     // vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
     // check for shader compile errors
@@ -111,7 +125,7 @@ int main() {
         std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
     // fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
     // check for shader compile errors
@@ -122,7 +136,7 @@ int main() {
         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
     // link shaders
-    unsigned int shaderProgram = glCreateProgram();
+    GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
@@ -137,7 +151,7 @@ int main() {
     // END SHADERS
 
     // START BUFFERS
-    unsigned int VBO, VAO;
+    GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glBindVertexArray(VAO);
@@ -150,23 +164,23 @@ int main() {
     glBindVertexArray(0);
 
     // Framebuffer
-    unsigned int framebuffer;
+    GLuint framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
     // Framebuffer color attachment
-    unsigned int textureColorBuffer;
+    GLuint textureColorBuffer;
     glGenTextures(1, &textureColorBuffer);
     glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebufferSize.x, framebufferSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)framebufferSize.x, (GLsizei)framebufferSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
 
-    unsigned int rbo;
+    GLuint rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebufferSize.x, framebufferSize.y);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (GLsizei)framebufferSize.x, (GLsizei)framebufferSize.y);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -194,14 +208,14 @@ int main() {
 	{
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-        style.Colors[ImGuiCol_FrameBg] = ImVec4{ 0.1, 0.1, 0.1, 1.0 };
-        style.Colors[ImGuiCol_Button] = ImVec4{ 0.2, 0.2, 0.2, 1.0 };
-        style.Colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.15, 0.0, 0.25, 1.0 };
-        style.Colors[ImGuiCol_ButtonActive] = ImVec4{ 0.10, 0.0, 0.2, 1.0 };
-        style.Colors[ImGuiCol_TabActive] = ImVec4{ 0.15, 0.15, 0.15, 1.0 };
-        style.Colors[ImGuiCol_TabHovered] = ImVec4{ 0.2, 0.2, 0.2, 1.0 };
-        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.1, 0.1, 0.1, 1.0 };
-        style.Colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.0, 0.0, 0.0, 1.0 };
+        style.Colors[ImGuiCol_FrameBg] = ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f };
+        style.Colors[ImGuiCol_Button] = ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f };
+        style.Colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.15f, 0.0f, 0.25f, 1.0f };
+        style.Colors[ImGuiCol_ButtonActive] = ImVec4{ 0.10f, 0.0f, 0.2f, 1.0f };
+        style.Colors[ImGuiCol_TabActive] = ImVec4{ 0.15f, 0.15f, 0.15f, 1.0f };
+        style.Colors[ImGuiCol_TabHovered] = ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f };
+        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f };
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.0f, 0.0f, 0.0f, 1.0f };
 
         style.FrameRounding = 5.0f;
         style.TabRounding = 5.0f;
@@ -247,11 +261,9 @@ int main() {
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
         {
-            static std::string fragmentShaderString = glsl_version + "\n\nin vec2 TexCoords;\nout vec4 FragColor;\n\nuniform vec2 ViewportSize;\n\nuniform float Time;\n\nvoid main()\n{\n\tFragColor = vec4(vec3(0), 1);\n}";
-
             ImGui::Begin("Fragment Shader");
 
-            static ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+            static ImGuiInputTextFlags flags;// = ImGuiInputTextFlags_AllowTabInput;
             ImGui::InputTextMultiline("User Input", &fragmentShaderString, ImVec2(-FLT_MIN, -ImGui::GetTextLineHeight() * 5), flags);
 
             if (ImGui::Button("Recompile")) {
@@ -295,6 +307,7 @@ int main() {
                     glDeleteShader(fragmentShader);
                 }
                 catch (const std::exception& e) {
+                    std::cout << e.what() << "\n";
                     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
                     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
                     glCompileShader(fragmentShader);
@@ -337,22 +350,22 @@ int main() {
                 glGenFramebuffers(1, &framebuffer);
                 glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-                glViewport(0, 0, viewportSize.x, viewportSize.y);
+                glViewport(0, 0, (GLsizei)viewportSize.x, (GLsizei)viewportSize.y);
 
                 glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebufferSize.x, framebufferSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)framebufferSize.x, (GLsizei)framebufferSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
 
                 glGenRenderbuffers(1, &rbo);
                 glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebufferSize.x, framebufferSize.y);
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (GLsizei)framebufferSize.x, (GLsizei)framebufferSize.y);
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
             }
             else {
                 glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-                glViewport(0, 0, viewportSize.x, viewportSize.y);
+                glViewport(0, 0, (GLsizei)viewportSize.x, (GLsizei)viewportSize.y);
             }
 
             // Draw
@@ -362,15 +375,15 @@ int main() {
 
             glUseProgram(shaderProgram);
             int u_ViewportSize = glGetUniformLocation(shaderProgram, "ViewportSize");
-            glUniform2f(u_ViewportSize, viewportSize.x, viewportSize.y);
+            glUniform2f(u_ViewportSize, (GLfloat)viewportSize.x, (GLfloat)viewportSize.y);
             int u_Time = glGetUniformLocation(shaderProgram, "Time");
-            glUniform1f(u_Time, glfwGetTime());
+            glUniform1f(u_Time, (GLfloat)glfwGetTime());
 
             glBindVertexArray(VAO);
             glDrawArrays(GL_TRIANGLES, 0, 6);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            ImGui::Image((void*)textureColorBuffer, ImVec2(framebufferSize.x, framebufferSize.y), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+            ImGui::Image((ImTextureID)(intptr_t)textureColorBuffer, ImVec2(framebufferSize.x, framebufferSize.y), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::End();
         }
         ImGui::End();
