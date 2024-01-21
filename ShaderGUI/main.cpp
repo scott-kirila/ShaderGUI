@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 GLuint VAO, VBO, FBO, RBO, texture_id, shaderProgram;
 
@@ -60,7 +61,7 @@ namespace ImGui {
 	bool InputTextMultiline(const char* label, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
-        flags |= ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_CallbackCompletion;
+        flags |= ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_CallbackEdit | ImGuiInputTextFlags_CallbackCompletion;// | ImGuiInputTextFlags_CallbackAlways;
 
 		return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags, text_edit_callback, (void*)str);
         
@@ -263,8 +264,34 @@ int main() {
         {
             ImGui::Begin("Fragment Shader");
 
-            static ImGuiInputTextFlags flags;// = ImGuiInputTextFlags_AllowTabInput;
+            static ImGuiInputTextFlags flags; //= ImGuiInputTextFlags_AllowTabInput;
             ImGui::InputTextMultiline("User Input", &fragmentShaderString, ImVec2(-FLT_MIN, -ImGui::GetTextLineHeight() * 5), flags);
+
+            //ImGui::SetNextWindowFocus();
+
+            /*
+            std::vector<std::string > autocomplete = { "cat", "dog", "moose" };
+            ImGui::OpenPopup("Auto-complete");
+            if (ImGui::BeginPopup("Auto-complete")) {
+                //ImGui::SetNextWindowPos(ImGui::GetCursorScreenPos());
+                //if ((ImGui::IsWindowFocused() || !ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow)) && !ImGui::IsAnyItemActive())
+                //    ImGui::SetKeyboardFocusHere(-1);
+                int item_current_idx = 0;
+                for (int n = 0; n < autocomplete.size(); n++)
+                {
+                    const bool is_selected = (item_current_idx == n);
+                    if (ImGui::Selectable(autocomplete[n].c_str(), is_selected))
+                        item_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+
+                ImGui::EndPopup();
+            }
+            */
+
 
             if (ImGui::Button("Recompile")) {
                 std::cout << "Recompiling..." << std::endl;
