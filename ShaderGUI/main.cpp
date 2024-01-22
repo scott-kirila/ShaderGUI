@@ -61,7 +61,11 @@ namespace ImGui {
 	bool InputTextMultiline(const char* label, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
-        flags |= ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_CallbackEdit | ImGuiInputTextFlags_CallbackCompletion;// | ImGuiInputTextFlags_CallbackAlways;
+        flags |= ImGuiInputTextFlags_CallbackResize;
+        flags |= ImGuiInputTextFlags_CallbackEdit;
+        //flags |= ImGuiInputTextFlags_CallbackCompletion;
+        flags |= ImGuiInputTextFlags_CallbackAlways;
+        flags |= ImGuiInputTextFlags_CallbackCharFilter;
 
 		return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags, text_edit_callback, (void*)str);
         
@@ -240,6 +244,8 @@ int main() {
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
 
+        ImGui::ShowMetricsWindow();
+
         // Dockspace
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
@@ -262,9 +268,11 @@ int main() {
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
         {
+            ImGui::SetNextWindowFocus();
+
             ImGui::Begin("Fragment Shader");
 
-            static ImGuiInputTextFlags flags; //= ImGuiInputTextFlags_AllowTabInput;
+            static ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
             ImGui::InputTextMultiline("User Input", &fragmentShaderString, ImVec2(-FLT_MIN, -ImGui::GetTextLineHeight() * 5), flags);
 
             //ImGui::SetNextWindowFocus();
