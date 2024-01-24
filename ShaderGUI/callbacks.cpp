@@ -2,6 +2,7 @@
 
 #include "imgui_internal.h"
 
+#include <algorithm>
 #include <iostream>
 #include <list>
 #include <string>
@@ -31,6 +32,7 @@ int text_edit_callback(ImGuiInputTextCallbackData* data) {
     static bool s_autocomplete = false;
 
     static int s_linePos{};
+    static int s_numLines{};
     static int cursorPos = data->CursorPos;
 
     switch (data->EventFlag)
@@ -68,7 +70,6 @@ int text_edit_callback(ImGuiInputTextCallbackData* data) {
                 s_candidatesList.push_back(command);
         }
 
-        std::cout << "Edit callback: " << s_candidatesList.size() << "\n";
         break;
     }
     case ImGuiInputTextFlags_CallbackCharFilter:
@@ -86,18 +87,63 @@ int text_edit_callback(ImGuiInputTextCallbackData* data) {
     }
     case ImGuiInputTextFlags_CallbackAlways:
     {
-        if (data->CursorPos == cursorPos + 1 || data->CursorPos == cursorPos - 1) {
+
+        if (s_candidateListOpen) {
+            if (data->CursorPos == cursorPos + 1 || data->CursorPos == cursorPos - 1) {
+                cursorPos = data->CursorPos;
+            }
+        }
+        else {
             cursorPos = data->CursorPos;
         }
 
-        std::cout << cursorPos << "\n";
+        if (data->Buf + cursorPos < s_wordStart || data->Buf + cursorPos > s_wordEnd) {
+            s_candidatesList.clear();
+            s_candidateListOpen = false;
+        }
 
         if (s_candidatesList.size() >= 2) {
 
-            ImGui::SetNextWindowPos(
-                ImVec2(ImGui::GetItemRectMax().x - 10 * ImGui::CalcTextSize(" ").x, ImGui::GetItemRectMin().y + ImGui::GetWindowHeight())
-            );
-            //ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x + ImGui::CalcTextSize(" ").x * (s_line_pos - s_length), ImGui::GetItemRectMax().y));
+            s_numLines = 0;
+            s_linePos = 0;
+            bool newlineFound = false;
+            int endPoint = (int)(s_wordEnd - data->Buf);
+            for (int i = endPoint - 1; i >= 0; i--) {
+                if (data->Buf[i] == '\n') {
+                    s_numLines++;
+                    newlineFound = true;
+                }
+                if (!newlineFound)
+                    s_linePos++;
+            }
+
+            //char* tempLineEnd = data->Buf + data->CursorPos;
+            //char* tempLineStart = tempLineEnd;
+            //while (tempLineStart > data->Buf) {
+            //    const char c = tempLineStart[-1];
+            //    if (c == '\n') break;
+            //    tempLineStart--;
+            //}
+            //s_linePos = (int)(tempLineEnd - tempLineStart);
+
+            //s_numLines = 0;
+            //tempLineEnd = data->Buf + data->CursorPos;
+            //tempLineStart = tempLineEnd;
+            //while (tempLineStart > data->Buf) {
+            //    const char c = tempLineStart[-1];
+            //    if (c == '\n') {
+            //        s_numLines++;
+            //    }
+            //    tempLineStart--;
+            //}
+            //ImGui::SetNextWindowPos(
+            //    ImVec2(ImGui::GetItemRectMax().x - 10 * ImGui::CalcTextSize(" ").x, ImGui::GetItemRectMin().y + ImGui::GetWindowHeight())
+            //);
+            std::cout << ImGui::CalcTextSize(" ").x << '\n';
+            ImGui::SetNextWindowPos(ImVec2(
+                    ImGui::GetItemRectMin().x + ImGui::CalcTextSize(" ").x * (s_linePos - s_length - 1),
+                    ImGui::GetItemRectMax().y + ImGui::GetTextLineHeight() * (s_numLines + 1)
+            ));
             if (ImGui::BeginTooltip()) {
 
                 s_candidateListOpen = true;
